@@ -8,14 +8,32 @@ const { connectRedis } = require('./config/redis');
 const { registerSocketHandlers } = require('./services/socketService');
 
 const PORT        = process.env.PORT       || 5000;
-const CLIENT_URL  = process.env.CLIENT_URL || 'http://localhost:5173';
-const allowedOrigins = CLIENT_URL.split(',').map(o => o.trim());
 
 const httpServer = http.createServer(app);
 
 // Socket.io with optional Redis adapter for horizontal scaling
 const io = new Server(httpServer, {
-  cors: { origin: allowedOrigins, methods: ['GET', 'POST'], credentials: true },
+  cors: {
+    origin: (origin, callback) => {
+      // No origin = server-to-server, mobile apps — always allow
+      if (!origin) return callback(null, true);
+
+      // Strip trailing slash before comparing
+      const cleanOrigin = origin.replace(/\/$/, '');
+
+      if (
+        cleanOrigin.includes('netlify.app') ||
+        cleanOrigin.includes('localhost')
+      ) {
+        callback(null, true);
+      } else {
+        console.warn('[Socket.io CORS] Blocked origin:', cleanOrigin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true
+  },
   pingTimeout:  60000,
   pingInterval: 25000,
   maxHttpBufferSize: 5e6, // 5MB for encrypted payloads
