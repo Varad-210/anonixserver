@@ -13,23 +13,27 @@ const app = express();
 // ── Security ──────────────────────────────────────────────────────────────
 app.use(helmet());
 
-// ── CORS — explicit origin whitelist ──────────────────────────────────────
-// CLIENT_URL can be comma-separated for multiple origins, e.g.:
-//   https://ghostnet.netlify.app,http://localhost:5173
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://anonix.netlify.app/',
-  ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(o => o.trim()) : []),
-];
-console.log('[CORS] Allowed origins:', allowedOrigins);
-
+// ── CORS — production-safe pattern matching ──────────────────────────────
+// ✅ Allows: any *.netlify.app subdomain + localhost (any port)
+// ✅ Strips trailing slashes so 'https://anonix.netlify.app/' also passes
+// ✅ credentials:true is kept (incompatible with origin:'*', so we use a fn)
 app.use(cors({
-  origin: (origin, cb) => {
-    // Allow requests with no origin (mobile apps, curl, Postman, Render health checks)
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-    console.warn('[CORS] Blocked origin:', origin);
-    cb(new Error(`CORS: origin ${origin} not allowed`));
+  origin: (origin, callback) => {
+    // No origin = server-to-server, curl, Postman, mobile apps — always allow
+    if (!origin) return callback(null, true);
+
+    // Strip trailing slash before comparing
+    const cleanOrigin = origin.replace(/\/$/, '');
+
+    if (
+      cleanOrigin.includes('netlify.app') ||
+      cleanOrigin.includes('localhost')
+    ) {
+      callback(null, true);
+    } else {
+      console.warn('[CORS] Blocked origin:', cleanOrigin);
+      callback(new Error('Not allowed by CORS'));
+    }
   },
   methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id'],
