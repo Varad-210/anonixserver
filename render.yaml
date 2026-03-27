@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: ghostnet-backend
+    runtime: node
+    region: singapore  # change to: oregon / frankfurt / ohio as preferred
+    plan: free          # upgrade to 'starter' for always-on
+    rootDir: .          # this file lives inside /server, so root is /server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Set these in Render Dashboard → Environment:
+      - key: PORT
+        value: 10000          # Render sets this automatically; keep as fallback
+      - key: MONGODB_URI
+        sync: false           # enter your MongoDB Atlas URI in Render dashboard
+      - key: CLIENT_URL
+        sync: false           # your Netlify URL e.g. https://ghostnet.netlify.app
+      - key: JWT_SECRET
+        generateValue: true   # Render auto-generates a secure secret
+      - key: ADMIN_JWT_SECRET
+        generateValue: true
+      # Optional — only fill if you use Cloudinary:
+      # - key: CLOUDINARY_CLOUD_NAME
+      #   sync: false
+      # - key: CLOUDINARY_API_KEY
+      #   sync: false
+      # - key: CLOUDINARY_API_SECRET
+      #   sync: false
+      # Optional — only fill if you use Redis:
+      # - key: REDIS_URL
+      #   sync: false
