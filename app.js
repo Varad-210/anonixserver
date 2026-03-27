@@ -10,8 +10,15 @@ const errorHandler = require('./middlewares/errorHandler');
 
 const app = express();
 
+// ── Trust proxy (required for Render, Heroku, etc.) ──────────────────────
+// This allows express-rate-limit to correctly identify users behind proxies
+app.set('trust proxy', 1);
+
 // ── Security ──────────────────────────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin file access
+  contentSecurityPolicy: false, // Disable CSP to allow inline media
+}));
 
 // ── CORS — production-safe pattern matching ──────────────────────────────
 // ✅ Allows: any *.netlify.app subdomain + localhost (any port)

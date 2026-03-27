@@ -56,7 +56,9 @@ const uploadFile = [
       uploadStream.on('error', (err) => next(err));
       uploadStream.on('finish', () => {
         const fileId  = uploadStream.id.toString();
-        const fileUrl = `/api/v1/files/${fileId}`;
+        // Return full URL with backend domain for cross-origin access
+        const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const fileUrl = `${baseUrl}/api/v1/files/${fileId}`;
         res.status(201).json({
           fileId,
           fileUrl,
